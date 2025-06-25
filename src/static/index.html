@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>stall wall</title>
+        <style>
+            body {font-family: sans-serif; padding: 2em; max-width: 600px; margin: auto;}
+            textarea {width: 100%; height: 100px;}
+            button {margin-top: 1em;}
+            .scribble-box {margin: 2em; padding: 1em; background-color: #f0f0f0; border-radius: 6px;}
+        </style>
+    </head>
+    <body>
+        <h1>write a scribble</h1>
+        <textarea id="scribbleText" maxlength="256"></textarea><br>
+        <button onclick="postScribble()" id="submit">submit</button>
+
+        <h2>random scribble</h2>
+        <button onclick="getScribble()">refresh</button>
+        <div class="scribble-box" id="displayBox">click refresh to load a scribble</div>
+
+        <script>
+            async function postScribble() {
+                const text = document.getElementById("scribbleText").value.trim();
+                if (!text) {
+                    alert("no scribble text");
+                    return;
+                }
+
+                const date = new Date();
+                const body = JSON.stringify({text: text, date: [date.getFullYear(), date.getMonth(), date.getDay()]});
+                const res = await fetch("/scribble", {
+                    method: "POST",
+                    headers: {"Content-Type":  "applications/json"},
+                    body: body
+                });
+
+                const successMessage = document.getElementById("submit");
+                if (res.ok) {
+                    document.getElementById("scribbleText").value = "";
+                    
+                    successMessage.innerText = "posted!";
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    successMessage.innerText = "submit"
+                } else {
+                    const msg = await res.text();
+                    console.log("error: " + msg);
+                    successMessage.innerText = "failed!";
+                    await new Promise(resolve => setTimeout(resolve, 1000))
+                    successMessage.innerText = "submit"
+                }
+            }
+
+            async function getScribble() {
+                const res = await fetch("/scribble");
+                const display = document.getElementById("displayBox");
+
+                if (res.ok) {
+                    const scribble = await res.json();
+                    display.innerText = `"${scribble.text}"\n\n${scribble.date[1]}-${scribble.date[2]}-${scribble.date[0]}`
+                } else {
+                    display.innerText = "no scribbles at this moment"
+                }
+            }
+        </script>
+    </body>
+</html>
